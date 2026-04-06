@@ -1,0 +1,23 @@
+fastapi==0.109.2
+uvicorn==0.29.0
+python-multipart==0.0.9
+pydantic==2.7.1
+
+# PDF & NLP
+PyMuPDF==1.24.5
+spacy==3.7.4
+
+# LLM
+groq==0.9.0
+
+# Speech
+faster-whisper==1.0.3
+gTTS==2.5.1
+
+# ML
+scikit-learn==1.5.0
+numpy==1.26.4
+
+# Utils
+python-dotenv==1.0.1
+aiofiles==23.2.1
