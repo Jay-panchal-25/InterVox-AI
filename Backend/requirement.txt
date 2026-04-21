@@ -1,3 +1,10 @@
-langchain-core==0.2.0
-langchain-groq==0.1.4
-python-dotenv==1.0.1
+langchain-core
+langchain-groq
+python-dotenv
+speechrecognition
+pyaudio
+gtts
+pygame
+fastapi 
+uvicorn
+langchain

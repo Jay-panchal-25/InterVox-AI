@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 from services.generator import generate_questions
 from services.evaluator import evaluate_answer
-
+from services.voice import speak, listen
 # ==============================
 # CONFIG
 # ==============================
@@ -45,11 +45,30 @@ def run_interview(questions):
     results = []
 
     for i, question in enumerate(questions, 1):
-        print(f"\nQ{i}: {question}")
-        
-        answer = input("Your Answer: ")
 
-        evaluation = evaluate_answer(question, answer)
+        # ✅ ALWAYS define first
+        if isinstance(question, dict):
+            question_text = question.get("question", "")
+        else:
+            question_text = str(question)
+
+        # Now safe to use
+        print(f"\nQ{i}: {question_text}")
+
+        speak(question_text)
+
+        answer = listen()
+
+        if not answer:
+            print("⚠️ No input detected. Try again...")
+            answer = listen()
+
+            if not answer:
+                print("❌ Skipping question...")
+                continue
+
+        evaluation = evaluate_answer(question_text, answer)
+
         results.append(evaluation)
 
         print("\n--- Evaluation ---")
@@ -58,12 +77,15 @@ def run_interview(questions):
 
     return results
 
-
 # ==============================
 # GENERATE FINAL REPORT
 # ==============================
 def generate_report(results):
+  
     print("\n===== FINAL REPORT =====")
+    if len(results) == 0:
+        print("❌ No valid answers recorded.")
+        return
 
     total_score = sum(r["overall_score"] for r in results)
     avg_score = round(total_score / len(results), 2)

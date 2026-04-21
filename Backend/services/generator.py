@@ -2,6 +2,8 @@ from services.llm import get_llm
 from services.prompt import get_question_prompt
 import json
 import re
+from services.llm import get_llm
+from services.prompt import get_question_prompt
 
 def extract_json(text):
     try:
@@ -41,3 +43,4 @@ def generate_questions(resume_path, jd_path):
         return extract_json(response.content) 
     except:
         return {"error": "Invalid JSON", "raw": response.content}
+    
