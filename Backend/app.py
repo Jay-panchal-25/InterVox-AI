@@ -6,10 +6,21 @@ from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from services.prompt import get_question_prompt
 from services.evaluator_prompt import get_evaluation_prompt
+from fastapi.middleware.cors import CORSMiddleware
+
+
+app = FastAPI(title="InterVox AI")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 load_dotenv()
 
-app = FastAPI(title="InterVox AI")
 
 # ==============================
 # INIT LLM
