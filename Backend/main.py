@@ -1,45 +1,104 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-import uvicorn
-import os
+from services.generator import generate_questions
+from services.evaluator import evaluate_answer
 
-load_dotenv()
-
-from routes.resume import router as resume_router   
-from routes.interview import router as interview_router
-from routes.evaluate import router as evaluate_router
-
-app = FastAPI(
-    title="InterVox AI",
-    description="Voice-based AI Interview Simulator",
-    version="1.0.0",
-)
-
-# ── CORS (allow React frontend) ───────────────────────────────────────────────
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# ── Routers ───────────────────────────────────────────────────────────────────
-app.include_router(resume_router,   prefix="/api/resume",    tags=["Resume"])
-app.include_router(interview_router, prefix="/api/interview", tags=["Interview"])
-app.include_router(evaluate_router,  prefix="/api/evaluate",  tags=["Evaluate"])
+# ==============================
+# CONFIG
+# ==============================
+RESUME_PATH = "content/resume.txt"
+JD_PATH = "content/job_description.txt"
+MAX_QUESTIONS = 5
 
 
-@app.get("/")
-async def root():
-    return {"message": "InterVox AI Backend is running 🚀"}
+# ==============================
+# LOAD ENV
+# ==============================
+def setup():
+    load_dotenv()
 
 
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
+# ==============================
+# GET QUESTIONS
+# ==============================
+def get_questions():
+    data = generate_questions(RESUME_PATH, JD_PATH)
+
+    if "error" in data:
+        print("Error generating questions")
+        print(data)
+        exit()
+
+    questions = (
+        data.get("technical", []) +
+        data.get("project_based", []) +
+        data.get("scenario_based", []) +
+        data.get("hr", [])
+    )
+
+    return questions[:MAX_QUESTIONS]
+
+
+# ==============================
+# RUN INTERVIEW
+# ==============================
+def run_interview(questions):
+    results = []
+
+    for i, question in enumerate(questions, 1):
+        print(f"\nQ{i}: {question}")
+        
+        answer = input("Your Answer: ")
+
+        evaluation = evaluate_answer(question, answer)
+        results.append(evaluation)
+
+        print("\n--- Evaluation ---")
+        print("Score:", evaluation["overall_score"])
+        print("Feedback:", evaluation["feedback"])
+
+    return results
+
+
+# ==============================
+# GENERATE FINAL REPORT
+# ==============================
+def generate_report(results):
+    print("\n===== FINAL REPORT =====")
+
+    total_score = sum(r["overall_score"] for r in results)
+    avg_score = round(total_score / len(results), 2)
+
+    print("Average Score:", avg_score)
+
+    weak_areas = []
+
+    for r in results:
+        if r["technical_accuracy"] < 6:
+            weak_areas.append("technical_accuracy")
+        if r["depth"] < 6:
+            weak_areas.append("depth")
+        if r["clarity"] < 6:
+            weak_areas.append("clarity")
+
+    print("Weak Areas:", list(set(weak_areas)))
+
+
+# ==============================
+# MAIN ENTRY
+# ==============================
+def main():
+    print("\n===== INTERVOX AI STARTED =====\n")
+
+    setup()
+
+    questions = get_questions()
+
+    results = run_interview(questions)
+
+    generate_report(results)
+
+    print("\n===== INTERVIEW COMPLETED =====\n")
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    main()

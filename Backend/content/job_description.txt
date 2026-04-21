@@ -1,0 +1,23 @@
+Role: Machine Learning Engineer (Fresher)
+
+Responsibilities:
+- Build and train machine learning models
+- Work with large datasets
+- Deploy ML models into production
+- Optimize performance
+
+Required Skills:
+- Strong Python
+- ML frameworks (Scikit-learn, TensorFlow, PyTorch)
+- Data preprocessing and feature engineering
+- API development basics
+
+Preferred:
+- Cloud (AWS/GCP)
+- Docker
+- Experience with LLMs or LangChain
+
+Expectations:
+- Solve real-world problems
+- Good communication
+- Team collaboration
