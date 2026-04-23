@@ -1,6 +1,5 @@
-from services.llm import get_llm
-from services.prompt import get_question_prompt
 import json
+import os
 import re
 from services.llm import get_llm
 from services.prompt import get_question_prompt
@@ -25,12 +24,17 @@ def load_text(path):
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
 
-def generate_questions(resume_path, jd_path):
+def resolve_input_text(value):
+    if isinstance(value, str) and os.path.isfile(value):
+        return load_text(value)
+    return value
+
+def generate_questions(resume_input, jd_input):
     llm = get_llm()
     prompt = get_question_prompt()
 
-    resume = load_text(resume_path)
-    jd = load_text(jd_path)
+    resume = resolve_input_text(resume_input)
+    jd = resolve_input_text(jd_input)
 
     chain = prompt | llm
 

@@ -1,26 +1,26 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from dotenv import load_dotenv
-
-from langchain_groq import ChatGroq
-from langchain_core.prompts import ChatPromptTemplate
-from services.prompt import get_question_prompt
-from services.evaluator_prompt import get_evaluation_prompt
 from fastapi.middleware.cors import CORSMiddleware
-
+from fastapi import FastAPI, UploadFile, File,Form
 
 app = FastAPI(title="InterVox AI")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+from pydantic import BaseModel
+from dotenv import load_dotenv
+from langchain_groq import ChatGroq
+from services.evaluator_prompt import get_evaluation_prompt
 
+from services.file_parser import extract_text
+from services.generator import generate_questions
 load_dotenv()
-
 
 # ==============================
 # INIT LLM
@@ -53,19 +53,31 @@ def home():
 # ==============================
 # GENERATE QUESTIONS
 # ==============================
+
 @app.post("/generate")
-def generate(req: QuestionRequest):
+async def generate(
+    resume: UploadFile = File(None),
+    jd: UploadFile = File(None),
+    resume_text: str = Form(None),
+    jd_text: str = Form(None),
+):
     try:
-        prompt = get_question_prompt()
+        # ===== HANDLE FILE INPUT =====
+        if resume and jd:
+            resume_data = extract_text(resume)
+            jd_data = extract_text(jd)
 
-        chain = prompt | llm
+        # ===== HANDLE TEXT INPUT =====
+        elif resume_text and jd_text:
+            resume_data = resume_text
+            jd_data = jd_text
 
-        response = chain.invoke({
-            "resume": req.resume,
-            "jd": req.jd
-        })
+        else:
+            return {"error": "Provide either files or text"}
 
-        return {"result": response.content}
+        result = generate_questions(resume_data, jd_data)
+
+        return {"result": result}
 
     except Exception as e:
         return {"error": str(e)}

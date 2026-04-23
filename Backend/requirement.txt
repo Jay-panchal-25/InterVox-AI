@@ -8,3 +8,6 @@ pygame
 fastapi 
 uvicorn
 langchain
+python-multipart 
+pypdf 
+python-docx

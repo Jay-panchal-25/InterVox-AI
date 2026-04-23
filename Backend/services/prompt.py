@@ -13,7 +13,7 @@ Job Description:
 {jd}
 
 Generate high-quality interview questions in STRICT JSON format:
-
+total 2 question only
 {{
   "technical": [],
   "project_based": [],
