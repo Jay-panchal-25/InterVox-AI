@@ -1,5 +1,13 @@
+from dotenv import load_dotenv
+from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, UploadFile, File,Form
+from pydantic import BaseModel
+
+from services.evaluator import evaluate_answer
+from services.file_parser import extract_text
+from services.generator import generate_questions
+
+load_dotenv()
 
 app = FastAPI(title="InterVox AI")
 
@@ -7,52 +15,31 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "http://127.0.0.1:5173"
+        "http://127.0.0.1:5173",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-from pydantic import BaseModel
-from dotenv import load_dotenv
-from langchain_groq import ChatGroq
-from services.evaluator_prompt import get_evaluation_prompt
 
-from services.file_parser import extract_text
-from services.generator import generate_questions
-load_dotenv()
 
-# ==============================
-# INIT LLM
-# ==============================
-llm = ChatGroq(
-    model_name="llama-3.1-8b-instant",
-    temperature=0.7
-)
-
-# ==============================
-# REQUEST MODELS
-# ==============================
 class QuestionRequest(BaseModel):
+    # Legacy model kept for compatibility with earlier request formats.
     resume: str
     jd: str
 
+
 class AnswerRequest(BaseModel):
+    # Request payload for answer evaluation.
     question: str
     answer: str
 
 
-# ==============================
-# HOME
-# ==============================
 @app.get("/")
 def home():
+    # Basic health check used by local development.
     return {"message": "InterVox AI Running"}
 
-
-# ==============================
-# GENERATE QUESTIONS
-# ==============================
 
 @app.post("/generate")
 async def generate(
@@ -61,44 +48,25 @@ async def generate(
     resume_text: str = Form(None),
     jd_text: str = Form(None),
 ):
+    # Generate interview questions from uploaded files or pasted text.
     try:
-        # ===== HANDLE FILE INPUT =====
-        if resume and jd:
-            resume_data = extract_text(resume)
-            jd_data = extract_text(jd)
+        resume_data = extract_text(resume) if resume else (resume_text.strip() if resume_text else "")
+        jd_data = extract_text(jd) if jd else (jd_text.strip() if jd_text else "")
 
-        # ===== HANDLE TEXT INPUT =====
-        elif resume_text and jd_text:
-            resume_data = resume_text
-            jd_data = jd_text
-
-        else:
+        if not resume_data or not jd_data:
             return {"error": "Provide either files or text"}
 
         result = generate_questions(resume_data, jd_data)
-
         return {"result": result}
+    except Exception as error:
+        return {"error": str(error)}
 
-    except Exception as e:
-        return {"error": str(e)}
 
-
-# ==============================
-# EVALUATE ANSWER
-# ==============================
 @app.post("/evaluate")
 def evaluate(req: AnswerRequest):
+    # Evaluate one answer against one interview question.
     try:
-        prompt = get_evaluation_prompt()
-
-        chain = prompt | llm
-
-        response = chain.invoke({
-            "question": req.question,
-            "answer": req.answer
-        })
-
-        return {"result": response.content}
-
-    except Exception as e:
-        return {"error": str(e)}
+        result = evaluate_answer(req.question, req.answer)
+        return {"result": result}
+    except Exception as error:
+        return {"error": str(error)}

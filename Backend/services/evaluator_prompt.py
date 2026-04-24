@@ -1,7 +1,10 @@
 from langchain_core.prompts import ChatPromptTemplate
 
+
 def get_evaluation_prompt():
-    return ChatPromptTemplate.from_template("""
+    # Prompt template for answer scoring and written feedback.
+    return ChatPromptTemplate.from_template(
+        """
 You are a senior technical interviewer.
 
 Evaluate the candidate's answer strictly based on the given question.
@@ -18,14 +21,14 @@ Evaluate on the following dimensions (score out of 10):
 3. Clarity
 4. Structure
 5. Communication
-                                            
+
 Scoring Guidelines:
 
-9-10 → Expert-level, deep explanation, includes examples and edge cases  
-7-8 → Strong understanding, minor gaps  
-5-6 → Basic understanding, lacks depth  
-3-4 → Weak understanding  
-0-2 → Incorrect or irrelevant answer
+9-10 -> Expert-level, deep explanation, includes examples and edge cases
+7-8 -> Strong understanding, minor gaps
+5-6 -> Basic understanding, lacks depth
+3-4 -> Weak understanding
+0-2 -> Incorrect or irrelevant answer
 
 Return STRICT JSON:
 
@@ -43,4 +46,5 @@ Rules:
 - Be strict and realistic
 - Do not inflate scores
 - Penalize vague answers
-""")
+"""
+    )
