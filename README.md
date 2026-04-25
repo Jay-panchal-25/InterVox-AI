@@ -100,6 +100,11 @@ InterVox-AI/
 |   |-- main.py
 |   |-- pyproject.toml
 |   |-- requirement.txt
+|   |-- uv.lock
+|   |-- README.md
+|   |-- content/
+|   |   |-- resume.txt
+|   |   `-- job_description.txt
 |   `-- services/
 |       |-- evaluator_prompt.py
 |       |-- evaluator.py
@@ -161,7 +166,7 @@ GROQ_API_KEY=your_groq_api_key_here
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/InterVox-AI.git
+git clone https://github.com/jay-panchal-25/InterVox-AI.git
 cd InterVox-AI
 ```
 
