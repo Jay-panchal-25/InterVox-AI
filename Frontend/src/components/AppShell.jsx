@@ -1,12 +1,12 @@
 import { Outlet } from "react-router-dom";
-import { useInterview } from "../context/useInterview";
+import { useInterview } from "../context/InterviewContext";
 
 export default function AppShell() {
   const { resetInterview } = useInterview();
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.12),transparent_30%),linear-gradient(180deg,#020617_0%,#071124_50%,#020617_100%)] text-slate-100">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-1 py-4 sm:px-6 lg:px-8">
         <header className="rounded-[24px] border border-cyan-400/10 bg-[#0b1220]/90 px-5 py-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur sm:px-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -17,7 +17,7 @@ export default function AppShell() {
                 Interview practice workspace
               </h1>
               <p className="mt-1 text-sm text-slate-400">
-                Add your details, answer clearly, and review your final performance.
+                Analyze your resume first, then practice the interview and review the final scores.
               </p>
             </div>
             <button

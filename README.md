@@ -1,40 +1,67 @@
 # InterVox AI
 
-InterVox AI is an AI-powered interview practice app that generates interview questions from a candidate's resume and a target job description, runs a guided interview flow, and produces AI-based scoring with overall feedback.
+InterVox AI is an AI-powered interview preparation and resume intelligence system that analyzes a candidate’s resume against a job description, generates tailored interview questions, evaluates answers, and provides structured performance feedback.
 
-## Features
+# 🚀 Features
 
-- Resume-driven and JD-driven interview question generation
-- Multiple question categories:
+## 🧠 Resume Intelligence System (NEW)
+- ATS score based on:
+  - Keyword relevance
+  - Resume structure
+  - Formatting quality
+- AI-based JD matching score
+- Final combined score (ATS + AI)
+- Matched vs missing keyword detection
+- Actionable resume feedback:
+  - Strengths
+  - Mistakes
+  - Improvement suggestions
+
+---
+
+## 🎯 Interview System
+- Resume + Job Description based question generation
+- Multiple question types:
   - Technical
   - Project-based
   - Scenario-based
   - HR / behavioral
-- AI evaluation of each answer using a structured rubric
-- Weighted overall scoring
-- Final interview summary with total score, feedback, and improvement suggestions
-- File upload support for `.txt`, `.pdf`, and `.docx`
-- Browser-based voice support:
-  - Text-to-speech for reading questions
-  - Speech-to-text for capturing answers
-- CLI voice interview flow using the backend voice service
+- Adaptive interview flow (context-aware)
+
+---
+
+## 📊 Answer Evaluation Engine
+- AI-based structured scoring:
+  - Technical accuracy
+  - Depth
+  - Clarity
+  - Structure
+  - Communication
+- Weighted scoring system
+- Per-question feedback with improvement tips
+
+---
+
+## 🧾 Final Interview Summary
+- Total score calculation
+- Performance classification (Strong / Good / Weak)
+- Dimension-wise breakdown
+- Weak & strong area detection  
+---
 
 ## How It Works
-
 ```text
 Resume + Job Description
-        |
-        v
-Question Generation
-        |
-        v
-Interactive Interview
-        |
-        v
-Answer Evaluation
-        |
-        v
-Final Interview Summary
+        ↓
+Resume Analysis (ATS + AI + Keywords)
+        ↓
+Interview Question Generation
+        ↓
+Interactive Interview Flow
+        ↓
+Answer Evaluation (AI + rubric scoring)
+        ↓
+Final Summary + Feedback Report
 ```
 
 ## Tech Stack
@@ -73,36 +100,39 @@ InterVox-AI/
 |   |-- main.py
 |   |-- pyproject.toml
 |   |-- requirement.txt
-|   |-- uv.lock
-|   |-- README.md
-|   |-- content/
-|   |   |-- resume.txt
-|   |   `-- job_description.txt
 |   `-- services/
-|       |-- evaluator.py
 |       |-- evaluator_prompt.py
+|       |-- evaluator.py
 |       |-- file_parser.py
 |       |-- generator.py
+|       |-- interview_summary.py
 |       |-- llm.py
 |       |-- prompt.py
+|       |-- resume_analysis.py
 |       `-- voice.py
 |-- Frontend/
-|   |-- package.json
-|   |-- package-lock.json
-|   |-- vite.config.js
 |   |-- eslint.config.js
 |   |-- index.html
+|   |-- package.json
+|   |-- vite.config.js
+|   |-- README.md
 |   |-- public/
 |   `-- src/
 |       |-- App.jsx
-|       |-- main.jsx
 |       |-- index.css
+|       |-- main.jsx
 |       |-- components/
+|       |   |-- AppShell.jsx
+|       |   |-- FileDropCard.jsx
+|       |   `-- SectionCard.jsx
 |       |-- context/
-|       |-- lib/
+|       |   `-- InterviewContext.jsx
 |       `-- pages/
-|-- .gitignore
-`-- README.md
+|           |-- AnalysisPage.jsx
+|           |-- HomePage.jsx
+|           |-- InterviewPage.jsx
+|           `-- ResultsPage.jsx
+|-- README.md
 ```
 
 ## Requirements

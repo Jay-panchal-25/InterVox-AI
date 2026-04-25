@@ -1,14 +1,14 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "./components/AppShell";
-import { useInterview } from "./context/useInterview";
+import { useInterview } from "./context/InterviewContext";
 import HomePage from "./pages/HomePage";
 import InterviewPage from "./pages/InterviewPage";
 import ResultsPage from "./pages/ResultsPage";
-
+import AnalysisPage from "./pages/AnalysisPage";
 function InterviewRoute() {
-  const { questions } = useInterview();
+  const { analysis, questions } = useInterview();
 
-  if (!questions.length) {
+  if (!analysis || !questions.length) {
     return <Navigate to="/" replace />;
   }
 
@@ -16,9 +16,9 @@ function InterviewRoute() {
 }
 
 function ResultsRoute() {
-  const { results } = useInterview();
+  const { results, summary } = useInterview();
 
-  if (!results.length) {
+  if (!summary || !results.length) {
     return <Navigate to="/" replace />;
   }
 
@@ -33,6 +33,7 @@ export default function App() {
         <Route path="/interview" element={<InterviewRoute />} />
         <Route path="/results" element={<ResultsRoute />} />
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/analysis" element={<AnalysisPage />} />
       </Route>
     </Routes>
   );

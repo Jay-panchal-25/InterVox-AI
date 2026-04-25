@@ -14,7 +14,7 @@ Resume:
 
 Job Description:
 {jd}
-
+total 2 questions i want
 Generate high-quality interview questions in STRICT JSON format:
 {{
   "technical": [],

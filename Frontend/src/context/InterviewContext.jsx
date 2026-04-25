@@ -1,43 +1,18 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+/* eslint-disable react-refresh/only-export-components */
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
-import { InterviewContext } from "./interview-context";
+
 const API_URL = "http://localhost:8000";
 const STORAGE_KEY = "intervox-session";
 
-const parseJsonSafely = (value) => {
-  if (!value) return {};
-  if (typeof value === "object") return value;
-
-  try {
-    return JSON.parse(value);
-  } catch {
-    return { feedback: String(value) };
-  }
-};
-
-const getQuestionText = (question) =>
-  typeof question === "object" ? question.question : question;
-
-const normalizeQuestionText = (question) =>
-  getQuestionText(question)
-    ?.toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-
-const dedupeQuestions = (questions) => {
-  const seen = new Set();
-
-  return questions.filter((question) => {
-    const normalized = normalizeQuestionText(question);
-
-    if (!normalized || seen.has(normalized)) {
-      return false;
-    }
-
-    seen.add(normalized);
-    return true;
-  });
-};
+const InterviewContext = createContext(null);
 
 const readStoredSession = () => {
   if (typeof window === "undefined") {
@@ -52,23 +27,36 @@ const readStoredSession = () => {
   }
 };
 
+const getErrorMessage = (payload, fallback) =>
+  payload?.detail || payload?.error || fallback;
+
+const readResponse = async (response, fallback) => {
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(getErrorMessage(payload, fallback));
+  }
+
+  return payload;
+};
+
 export function InterviewProvider({ children }) {
   const navigate = useNavigate();
   const storedSession = readStoredSession();
 
+  const [analysis, setAnalysis] = useState(storedSession?.analysis ?? null);
   const [questions, setQuestions] = useState(storedSession?.questions ?? []);
   const [current, setCurrent] = useState(storedSession?.current ?? 0);
   const [answer, setAnswer] = useState(storedSession?.answer ?? "");
   const [results, setResults] = useState(storedSession?.results ?? []);
+  const [summary, setSummary] = useState(storedSession?.summary ?? null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef(null);
   const dictatedBaseRef = useRef("");
 
-  const currentQuestion = questions[current];
-  const currentQuestionText = currentQuestion ? getQuestionText(currentQuestion) : "";
-  const interviewComplete = questions.length > 0 && current >= questions.length;
+  const currentQuestionText = questions[current] || "";
   const answeredCount = Math.min(results.length, questions.length);
   const progress = questions.length
     ? Math.round((answeredCount / questions.length) * 100)
@@ -82,30 +70,15 @@ export function InterviewProvider({ children }) {
     window.sessionStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
+        analysis,
         questions,
         current,
         answer,
         results,
+        summary,
       }),
     );
-  }, [questions, current, answer, results]);
-
-  useEffect(() => {
-    if (interviewComplete) {
-      navigate("/results", { replace: true });
-    }
-  }, [interviewComplete, navigate]);
-
-  const averageScore = useMemo(() => {
-    if (!results.length) return 0;
-
-    const total = results.reduce(
-      (sum, result) => sum + Number(result.overall_score || 0),
-      0,
-    );
-
-    return Number((total / results.length).toFixed(1));
-  }, [results]);
+  }, [analysis, questions, current, answer, results, summary]);
 
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop?.();
@@ -115,7 +88,9 @@ export function InterviewProvider({ children }) {
   }, []);
 
   const speak = useCallback((text) => {
-    if (!text || !window.speechSynthesis) return;
+    if (!text || !window.speechSynthesis) {
+      return;
+    }
 
     stopListening();
     window.speechSynthesis.cancel();
@@ -126,7 +101,7 @@ export function InterviewProvider({ children }) {
     window.speechSynthesis.speak(speech);
   }, [stopListening]);
 
-  const generateQuestions = async ({ resumeFile, jdFile, resumeText, jdText }) => {
+  const prepareInterview = async ({ resumeFile, jdFile, resumeText, jdText }) => {
     if (!resumeFile && !resumeText?.trim()) {
       alert("Add resume text or upload a resume file.");
       return false;
@@ -138,6 +113,7 @@ export function InterviewProvider({ children }) {
     }
 
     const formData = new FormData();
+
     if (resumeFile) {
       formData.append("resume", resumeFile);
     }
@@ -153,40 +129,36 @@ export function InterviewProvider({ children }) {
 
     try {
       setLoading(true);
+      stopListening();
 
       const response = await fetch(`${API_URL}/generate`, {
         method: "POST",
         body: formData,
       });
+      const data = await readResponse(response, "Resume analysis failed.");
 
-      const data = await response.json();
-
-      if (data.error) {
-        alert(data.error);
-        return false;
-      }
-
-      const parsed = parseJsonSafely(data.result);
-      const allQuestions = dedupeQuestions([
-        ...(parsed.technical || []),
-        ...(parsed.project_based || []),
-        ...(parsed.scenario_based || []),
-        ...(parsed.hr || []),
-      ]);
-
-      setQuestions(allQuestions);
+      setAnalysis(data.analysis ?? null);
+      setQuestions(data.questions ?? []);
       setCurrent(0);
       setResults([]);
+      setSummary(null);
       setAnswer("");
-      navigate("/interview");
       return true;
     } catch (error) {
       console.error(error);
-      alert("Question generation failed.");
+      alert(error.message || "Resume analysis failed.");
       return false;
     } finally {
       setLoading(false);
     }
+  };
+
+  const startInterview = () => {
+    if (!questions.length) {
+      return;
+    }
+
+    navigate("/interview");
   };
 
   const submitAnswer = async () => {
@@ -199,7 +171,7 @@ export function InterviewProvider({ children }) {
       setSubmitting(true);
       stopListening();
 
-      const response = await fetch(`${API_URL}/evaluate`, {
+      const evaluationResponse = await fetch(`${API_URL}/evaluate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -209,39 +181,45 @@ export function InterviewProvider({ children }) {
           answer,
         }),
       });
+      const evaluation = await readResponse(evaluationResponse, "Evaluation failed.");
 
-      const data = await response.json();
-
-      if (data.error) {
-        alert(data.error);
-        return false;
-      }
-
-      const parsed = parseJsonSafely(data.result);
-      const nextQuestionIndex = current + 1;
-      const nextQuestion = questions[nextQuestionIndex];
-      const nextQuestionText = nextQuestion ? getQuestionText(nextQuestion) : "";
-
-      setResults((previous) => [
-        ...previous,
+      const nextResults = [
+        ...results,
         {
           question: currentQuestionText,
           answer,
-          ...parsed,
+          ...evaluation,
         },
-      ]);
+      ];
+      const nextQuestionIndex = current + 1;
+      const nextQuestionText = questions[nextQuestionIndex] || "";
 
+      setResults(nextResults);
       setAnswer("");
       setCurrent(nextQuestionIndex);
 
       if (nextQuestionText) {
         speak(nextQuestionText);
+        return true;
       }
 
+      const summaryResponse = await fetch(`${API_URL}/interview-summary`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          results: nextResults,
+        }),
+      });
+      const summaryPayload = await readResponse(summaryResponse, "Final summary failed.");
+
+      setSummary(summaryPayload);
+      navigate("/results");
       return true;
     } catch (error) {
       console.error(error);
-      alert("Evaluation failed.");
+      alert(error.message || "Evaluation failed.");
       return false;
     } finally {
       setSubmitting(false);
@@ -289,8 +267,11 @@ export function InterviewProvider({ children }) {
         }
       }
 
-      const base = dictatedBaseRef.current;
-      const nextAnswer = [base, finalTranscript.trim(), interimTranscript.trim()]
+      const nextAnswer = [
+        dictatedBaseRef.current,
+        finalTranscript.trim(),
+        interimTranscript.trim(),
+      ]
         .filter(Boolean)
         .join(" ")
         .trim();
@@ -321,43 +302,58 @@ export function InterviewProvider({ children }) {
 
   const resetInterview = () => {
     stopListening();
+    setAnalysis(null);
     setQuestions([]);
     setCurrent(0);
     setAnswer("");
     setResults([]);
+    setSummary(null);
     setListening(false);
+
     if (typeof window !== "undefined") {
       window.speechSynthesis?.cancel();
       window.sessionStorage.removeItem(STORAGE_KEY);
     }
+
     navigate("/");
   };
 
-  const value = {
-    answer,
-    averageScore,
-    current,
-    currentQuestionText,
-    interviewComplete,
-    listening,
-    loading,
-    progress,
-    questions,
-    results,
-    setAnswer,
-    speak,
-    startListening,
-    stopListening,
-    submitAnswer,
-    submitting,
-    generateQuestions,
-    resetInterview,
-    answeredCount,
-  };
-
   return (
-    <InterviewContext.Provider value={value}>
+    <InterviewContext.Provider
+      value={{
+        analysis,
+        answer,
+        answeredCount,
+        current,
+        currentQuestionText,
+        listening,
+        loading,
+        prepareInterview,
+        progress,
+        questions,
+        resetInterview,
+        results,
+        setAnswer,
+        speak,
+        startInterview,
+        startListening,
+        stopListening,
+        submitAnswer,
+        submitting,
+        summary,
+      }}
+    >
       {children}
     </InterviewContext.Provider>
   );
+}
+
+export function useInterview() {
+  const context = useContext(InterviewContext);
+
+  if (!context) {
+    throw new Error("useInterview must be used within InterviewProvider");
+  }
+
+  return context;
 }

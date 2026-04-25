@@ -1,5 +1,5 @@
 import SectionCard from "../components/SectionCard";
-import { useInterview } from "../context/useInterview";
+import { useInterview } from "../context/InterviewContext";
 
 export default function InterviewPage() {
   const {
@@ -19,6 +19,7 @@ export default function InterviewPage() {
   } = useInterview();
 
   const currentQuestionNumber = Math.min(current + 1, questions.length);
+
   const handleAnswerChange = (value) => {
     if (listening) {
       stopListening();
@@ -120,7 +121,11 @@ export default function InterviewPage() {
             disabled={submitting}
             className="rounded-full bg-cyan-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-200"
           >
-            {submitting ? "Checking answer..." : "Submit answer"}
+            {submitting
+              ? currentQuestionNumber === questions.length
+                ? "Finishing interview..."
+                : "Checking answer..."
+              : "Submit answer"}
           </button>
         </div>
       </SectionCard>

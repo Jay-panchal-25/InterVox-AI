@@ -21,6 +21,30 @@ def extract_json(text):
         }
 
 
+def get_question_text(question):
+    if isinstance(question, dict):
+        return str(question.get("question", "")).strip()
+
+    return str(question).strip()
+
+
+def dedupe_questions(questions):
+    seen = set()
+    unique = []
+
+    for question in questions:
+        text = get_question_text(question)
+        normalized = re.sub(r"\s+", " ", text.lower()).strip()
+
+        if not normalized or normalized in seen:
+            continue
+
+        seen.add(normalized)
+        unique.append(text)
+
+    return unique
+
+
 def load_text(path):
     # Load plain text content from a local file path.
     with open(path, "r", encoding="utf-8") as file:
@@ -56,3 +80,24 @@ def generate_questions(resume_input, jd_input):
             "error": "Invalid JSON",
             "raw": response.content,
         }
+
+
+def build_question_payload(result):
+    question_groups = {
+        "technical": result.get("technical", []),
+        "project_based": result.get("project_based", []),
+        "scenario_based": result.get("scenario_based", []),
+        "hr": result.get("hr", []),
+    }
+    questions = dedupe_questions([
+        *question_groups["technical"],
+        *question_groups["project_based"],
+        *question_groups["scenario_based"],
+        *question_groups["hr"],
+    ])
+
+    return {
+        "question_groups": question_groups,
+        "questions": questions,
+        "weak_areas": result.get("weak_areas", []),
+    }
